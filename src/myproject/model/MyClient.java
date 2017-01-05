@@ -1,7 +1,18 @@
 package myproject.model;
 
+import client.loggerManager;
+import model.FileDataResponseType;
+import model.RequestType;
+import model.ResponseType;
+
+import java.io.IOException;
 import java.io.Serializable;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 
 /**
  * User: TTEDEMIRCIOGLU
@@ -15,6 +26,8 @@ public class MyClient implements Serializable, Runnable
     private String clientName;
     private Inet4Address ipAddress;
     private int portNumber;
+    private String serverIpAddress;
+    private int serverPortNumber;
     private int bitRate;
     private int timeout;
 
@@ -108,6 +121,26 @@ public class MyClient implements Serializable, Runnable
         this.timeout = timeout;
     }
 
+    public String getServerIpAddress()
+    {
+        return serverIpAddress;
+    }
+
+    public void setServerIpAddress(String serverIpAddress)
+    {
+        this.serverIpAddress = serverIpAddress;
+    }
+
+    public int getServerPortNumber()
+    {
+        return serverPortNumber;
+    }
+
+    public void setServerPortNumber(int serverPortNumber)
+    {
+        this.serverPortNumber = serverPortNumber;
+    }
+
     @Override
     public void run()
     {
@@ -115,11 +148,12 @@ public class MyClient implements Serializable, Runnable
 
         while (true)
         {
-            Long l = FileHelper.getAKey();
-            if (l != null)
+            int[] byteArrayToDownload = FileHelper.getBytesToDownload();
+            if (byteArrayToDownload != null)
             {
-                System.out.println("Benim adım: " + clientName + " ve " + l + " çıkarttım");
-                counter ++;
+                startDownload(byteArrayToDownload);
+
+                counter++;
             }
             else
             {
@@ -127,6 +161,52 @@ public class MyClient implements Serializable, Runnable
             }
         }
         System.out.println(clientName + " - " + counter + " tane çıkarttı.");
+    }
+
+    private void startDownload(int[] byteArrayToDownload)
+    {
+        InetAddress IPAddress = null;
+        try
+        {
+            IPAddress = InetAddress.getByName(serverIpAddress);
+
+            int startByte = byteArrayToDownload[0];
+            int endByte = byteArrayToDownload[1];
+            RequestType req = new RequestType(RequestType.REQUEST_TYPES.GET_FILE_DATA, FileHelper.file.getFile_id(), startByte, endByte, null);
+            byte[] sendData = req.toByteArray();
+            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, serverPortNumber);
+            DatagramSocket dsocket = new DatagramSocket();
+            dsocket.send(sendPacket);
+            byte[] receiveData = new byte[ResponseType.MAX_RESPONSE_SIZE];
+            long maxReceivedByte = -1;
+            while (maxReceivedByte < endByte)
+            {
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                dsocket.receive(receivePacket);
+                FileDataResponseType response = new FileDataResponseType(receivePacket.getData());
+                loggerManager.getInstance(this.getClass()).debug(response.toString());
+                if (response.getResponseType() != ResponseType.RESPONSE_TYPES.GET_FILE_DATA_SUCCESS)
+                {
+                    break;
+                }
+                if (response.getEnd_byte() > maxReceivedByte)
+                {
+                    maxReceivedByte = response.getEnd_byte();
+                }
+            }
+        }
+        catch (SocketException e)
+        {
+            e.printStackTrace();
+        }
+        catch (UnknownHostException e)
+        {
+            e.printStackTrace();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 }
 

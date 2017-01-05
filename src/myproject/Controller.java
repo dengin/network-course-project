@@ -41,7 +41,6 @@ public class Controller implements Serializable
     private int serverPort;
     private List<MyClient> myClients = new ArrayList<MyClient>();
     private MyClient selectedClient;
-//    private FileHelper fileHelper = new FileHelper();
 
     public Controller() throws SocketException
     {
@@ -58,7 +57,10 @@ public class Controller implements Serializable
                 {
                     if (inetAddress instanceof Inet4Address)
                     {
-                        myClients.add(new MyClient(startId++, netint.getName(), (Inet4Address) inetAddress, startPort++));
+                        MyClient myClient = new MyClient(startId++, netint.getName(), (Inet4Address) inetAddress, startPort++);
+                        myClient.setServerIpAddress(serverIp);
+                        myClient.setServerPortNumber(serverPort);
+                        myClients.add(myClient);
                     }
                 }
             }

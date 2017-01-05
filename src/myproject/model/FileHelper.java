@@ -25,61 +25,6 @@ public class FileHelper implements Serializable
     {
     }
 
-//    public FileHelper(model.FileDescriptor file)
-//    {
-//        this.file = file;
-//    }
-
-//    public FileDescriptor getFile()
-//    {
-//        return file;
-//    }
-
-//    public void setFile(FileDescriptor file)
-//    {
-//        this.file = file;
-//    }
-//
-//    public long getFileSize()
-//    {
-//        return fileSize;
-//    }
-//
-//    public void setFileSize(long fileSize)
-//    {
-//        this.fileSize = fileSize;
-//    }
-//
-    public static Map<Long, Long> getFileBytes()
-    {
-        return fileBytes;
-    }
-//
-//    public void setFileBytes(Map<Long, Long> fileBytes)
-//    {
-//        this.fileBytes = fileBytes;
-//    }
-//
-//    public Map<Long, Long> getRemainingBytes()
-//    {
-//        return remainingBytes;
-//    }
-//
-//    public void setRemainingBytes(Map<Long, Long> remainingBytes)
-//    {
-//        this.remainingBytes = remainingBytes;
-//    }
-//
-//    public RandomAccessFile getRandomAccessFile()
-//    {
-//        return randomAccessFile;
-//    }
-//
-//    public void setRandomAccessFile(RandomAccessFile randomAccessFile)
-//    {
-//        this.randomAccessFile = randomAccessFile;
-//    }
-
     public static void prepareFileBytesMap()
     {
         long i = 0;
@@ -97,13 +42,14 @@ public class FileHelper implements Serializable
         }
     }
 
-    public static synchronized Long getAKey()
+    public static synchronized int[] getBytesToDownload()
     {
         if (fileBytes != null && fileBytes.size() > 0)
         {
-            Long l = fileBytes.keySet().iterator().next();
-            fileBytes.remove(l);
-            return l;
+            Long startByteValue = fileBytes.keySet().iterator().next();
+            Long endByteValue = fileBytes.get(startByteValue);
+            int[] byteArray = new int[]{startByteValue.intValue(), endByteValue.intValue()};
+            return byteArray;
         }
         return null;
     }
