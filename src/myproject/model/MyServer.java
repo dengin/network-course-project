@@ -32,7 +32,7 @@ public class MyServer implements Serializable
             checkArgument(false, "Port numara tipinde olmalıdır");
         }
         this.bitRate = 1;
-        this.timeout = 5000;
+        this.timeout = 10000;
     }
 
     public Integer getId()

@@ -18,8 +18,6 @@ public class MyClient implements Serializable, Runnable
     private String clientName;
     private Inet4Address ipAddress;
     private int portNumber;
-    private int bitRate;
-    private int timeout;
     private List<MyServer> myServers;
 
     public MyClient(Integer id, String clientName, Inet4Address ipAddress, int portNumber, List<MyServer> myServers)
@@ -93,26 +91,6 @@ public class MyClient implements Serializable, Runnable
         this.portNumber = portNumber;
     }
 
-    public int getBitRate()
-    {
-        return bitRate;
-    }
-
-    public void setBitRate(int bitRate)
-    {
-        this.bitRate = bitRate;
-    }
-
-    public int getTimeout()
-    {
-        return timeout;
-    }
-
-    public void setTimeout(int timeout)
-    {
-        this.timeout = timeout;
-    }
-
     public List<MyServer> getMyServers()
     {
         return myServers;
@@ -129,7 +107,7 @@ public class MyClient implements Serializable, Runnable
         ExecutorService executorService = Executors.newFixedThreadPool(this.myServers.size());
         for (MyServer myServer : this.myServers)
         {
-            executorService.execute(new Thread(new FileDownload(clientName, myServer)));
+            executorService.execute(new FileDownload(clientName, myServer));
         }
         executorService.shutdown();
         while (!executorService.isTerminated())

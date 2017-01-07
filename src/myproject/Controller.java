@@ -13,9 +13,7 @@ import myproject.model.MyServer;
 import org.apache.log4j.Logger;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -173,22 +171,8 @@ public class Controller implements Serializable
 
     private void prepareFileFileByteMap()
     {
-        try
-        {
-            File file = new File("out/" + FileHelper.file.getFile_name());
-            RandomAccessFile raf = new RandomAccessFile(file, "rw");
-            raf.setLength(FileHelper.fileSize);
-            FileHelper.prepareFileBytesMap();
-            FileHelper.randomAccessFile = raf;
-        }
-        catch (FileNotFoundException exception)
-        {
-            logger.error("Hata: " + exception.getMessage());
-        }
-        catch (IOException exception)
-        {
-            logger.error("Hata: " + exception.getMessage());
-        }
+        File file = new File("out/" + FileHelper.file.getFile_name());
+        FileHelper.prepareFileBytesMap();
     }
 
     private void startDownloading()
