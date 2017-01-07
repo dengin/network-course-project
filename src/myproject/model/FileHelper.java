@@ -32,11 +32,11 @@ public class FileHelper implements Serializable
         {
             if (fileSize - i >= MAX_BYTE_LENGTH)
             {
-                fileBytes.put(i, MAX_BYTE_LENGTH);
+                fileBytes.put(i, (i + MAX_BYTE_LENGTH));
             }
             else
             {
-                fileBytes.put(i, fileSize - i);
+                fileBytes.put(i, fileSize);
             }
             i += MAX_BYTE_LENGTH;
         }
@@ -49,6 +49,7 @@ public class FileHelper implements Serializable
             Long startByteValue = fileBytes.keySet().iterator().next();
             Long endByteValue = fileBytes.get(startByteValue);
             int[] byteArray = new int[]{startByteValue.intValue(), endByteValue.intValue()};
+            fileBytes.remove(Long.parseLong(String.valueOf(startByteValue)));
             return byteArray;
         }
         return null;

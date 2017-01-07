@@ -1,18 +1,10 @@
 package myproject.model;
 
-import client.loggerManager;
-import model.FileDataResponseType;
-import model.RequestType;
-import model.ResponseType;
-
-import java.io.IOException;
 import java.io.Serializable;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * User: TTEDEMIRCIOGLU
@@ -26,17 +18,17 @@ public class MyClient implements Serializable, Runnable
     private String clientName;
     private Inet4Address ipAddress;
     private int portNumber;
-    private String serverIpAddress;
-    private int serverPortNumber;
     private int bitRate;
     private int timeout;
+    private List<MyServer> myServers;
 
-    public MyClient(Integer id, String clientName, Inet4Address ipAddress, int portNumber)
+    public MyClient(Integer id, String clientName, Inet4Address ipAddress, int portNumber, List<MyServer> myServers)
     {
         this.id = id;
         this.clientName = clientName;
         this.ipAddress = ipAddress;
         this.portNumber = portNumber;
+        this.myServers = myServers;
     }
 
     public String getInfo()
@@ -121,91 +113,27 @@ public class MyClient implements Serializable, Runnable
         this.timeout = timeout;
     }
 
-    public String getServerIpAddress()
+    public List<MyServer> getMyServers()
     {
-        return serverIpAddress;
+        return myServers;
     }
 
-    public void setServerIpAddress(String serverIpAddress)
+    public void setMyServers(List<MyServer> myServers)
     {
-        this.serverIpAddress = serverIpAddress;
-    }
-
-    public int getServerPortNumber()
-    {
-        return serverPortNumber;
-    }
-
-    public void setServerPortNumber(int serverPortNumber)
-    {
-        this.serverPortNumber = serverPortNumber;
+        this.myServers = myServers;
     }
 
     @Override
     public void run()
     {
-        int counter = 0;
-
-        while (true)
+        ExecutorService executorService = Executors.newFixedThreadPool(this.myServers.size());
+        for (MyServer myServer : this.myServers)
         {
-            int[] byteArrayToDownload = FileHelper.getBytesToDownload();
-            if (byteArrayToDownload != null)
-            {
-                startDownload(byteArrayToDownload);
-
-                counter++;
-            }
-            else
-            {
-                break;
-            }
+            executorService.execute(new Thread(new FileDownload(clientName, myServer)));
         }
-        System.out.println(clientName + " - " + counter + " tane çıkarttı.");
-    }
-
-    private void startDownload(int[] byteArrayToDownload)
-    {
-        InetAddress IPAddress = null;
-        try
+        executorService.shutdown();
+        while (!executorService.isTerminated())
         {
-            IPAddress = InetAddress.getByName(serverIpAddress);
-
-            int startByte = byteArrayToDownload[0];
-            int endByte = byteArrayToDownload[1];
-            RequestType req = new RequestType(RequestType.REQUEST_TYPES.GET_FILE_DATA, FileHelper.file.getFile_id(), startByte, endByte, null);
-            byte[] sendData = req.toByteArray();
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, serverPortNumber);
-            DatagramSocket dsocket = new DatagramSocket();
-            dsocket.send(sendPacket);
-            byte[] receiveData = new byte[ResponseType.MAX_RESPONSE_SIZE];
-            long maxReceivedByte = -1;
-            while (maxReceivedByte < endByte)
-            {
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                dsocket.receive(receivePacket);
-                FileDataResponseType response = new FileDataResponseType(receivePacket.getData());
-                loggerManager.getInstance(this.getClass()).debug(response.toString());
-                if (response.getResponseType() != ResponseType.RESPONSE_TYPES.GET_FILE_DATA_SUCCESS)
-                {
-                    break;
-                }
-                if (response.getEnd_byte() > maxReceivedByte)
-                {
-                    maxReceivedByte = response.getEnd_byte();
-                }
-            }
-        }
-        catch (SocketException e)
-        {
-            e.printStackTrace();
-        }
-        catch (UnknownHostException e)
-        {
-            e.printStackTrace();
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
         }
     }
 }
