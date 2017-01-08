@@ -13,7 +13,7 @@ import java.util.List;
  */
 public class FileHelper implements Serializable
 {
-    public static long MAX_BYTE_LENGTH = 1000;
+    public static long MAX_BYTE_LENGTH = 20000;
     public static FileDescriptor file;
     public static long fileSize;
     public static List<StartEndByte> startEndBytes = Lists.newArrayList();
@@ -40,8 +40,9 @@ public class FileHelper implements Serializable
         }
     }
 
-    public static synchronized StartEndByte getBytesToDownload(int bitRate)
+    public static synchronized List<StartEndByte> getBytesToDownload(int bitRate)
     {
+        List<StartEndByte> byteArrayListToDownload = Lists.newArrayList();
         if (startEndBytes != null && startEndBytes.size() > 0)
         {
             Long startByteValue = startEndBytes.get(0).getStart();
@@ -50,8 +51,20 @@ public class FileHelper implements Serializable
             {
                 startEndBytes.remove(i);
             }
-            return new StartEndByte(startByteValue, endByteValue);
+            byteArrayListToDownload.add(new StartEndByte(startByteValue, endByteValue));
         }
-        return null;
+        else if (remainingStartEndBytes != null && remainingStartEndBytes.size() > 0)
+        {
+            if (remainingStartEndBytes.size() < bitRate)
+            {
+                bitRate = remainingStartEndBytes.size();
+            }
+            for (int i = 0; i < bitRate; i++)
+            {
+                byteArrayListToDownload.add(remainingStartEndBytes.get(i));
+                remainingStartEndBytes.remove(i);
+            }
+        }
+        return byteArrayListToDownload;
     }
 }

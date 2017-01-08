@@ -46,12 +46,13 @@ public class FileDownload implements Serializable, Runnable
         int counter = 0;
         while (true)
         {
-            StartEndByte startEndByte = FileHelper.getBytesToDownload(myServer.getBitRate());
-            if (startEndByte != null)
+            List<StartEndByte> startEndByteList = FileHelper.getBytesToDownload(myServer.getBitRate());
+            if (startEndByteList != null && startEndByteList.size() > 0)
             {
-                startDownload(startEndByte);
+                startDownload(startEndByteList);
 
-                List<StartEndByte> remainingBytes = prepareRemainingBytes(startEndByte, downloadedStartEndBytes);
+                List<StartEndByte> remainingBytes = prepareRemainingBytes(startEndByteList, downloadedStartEndBytes);
+                downloadedStartEndBytes.clear();
                 if (remainingBytes.size() > 0)
                 {
                     for (StartEndByte remainingByte : remainingBytes)
@@ -66,27 +67,30 @@ public class FileDownload implements Serializable, Runnable
                 break;
             }
         }
-        logger.info(clientName + " - " + counter + " defa çalıştı." + (downloadedStartEndBytes.size() > 0 ? (downloadedStartEndBytes.get(0).getStart()) : 0));
+        logger.info(clientName + " - " + counter + " defa çalıştı.");
     }
 
-    private synchronized void startDownload(StartEndByte byteArrayToDownload)
+    private synchronized void startDownload(List<StartEndByte> byteArrayListToDownload)
     {
         InetAddress IPAddress = null;
         try
         {
             IPAddress = InetAddress.getByName(myServer.getIp());
 
-            int startByte = (int) byteArrayToDownload.getStart();
-            int endByte = (int) byteArrayToDownload.getEnd();
-            RequestType req = new RequestType(RequestType.REQUEST_TYPES.GET_FILE_DATA, FileHelper.file.getFile_id(), startByte + 1, endByte, null);
-            byte[] sendData = req.toByteArray();
-            DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, myServer.getPortNumber());
-            DatagramSocket dsocket = new DatagramSocket();
-            dsocket.send(sendPacket);
+            for (StartEndByte startEndByte : byteArrayListToDownload)
+            {
+                int startByte = (int) startEndByte.getStart();
+                int endByte = (int) startEndByte.getEnd();
+                RequestType req = new RequestType(RequestType.REQUEST_TYPES.GET_FILE_DATA, FileHelper.file.getFile_id(), startByte + 1, endByte, null);
+                byte[] sendData = req.toByteArray();
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, myServer.getPortNumber());
+                DatagramSocket dsocket = new DatagramSocket();
+                dsocket.send(sendPacket);
 
-            dsocket.setSoTimeout(myServer.getTimeout());
+                dsocket.setSoTimeout(myServer.getTimeout());
 
-            receivePackets(endByte, dsocket);
+                receivePackets(endByte, dsocket);
+            }
         }
         catch (SocketException e)
         {
@@ -139,16 +143,23 @@ public class FileDownload implements Serializable, Runnable
         randomAccessFile.close();
     }
 
-    private List<StartEndByte> prepareRemainingBytes(StartEndByte startEndByte, List<StartEndByte> downloadedStartEndBytes)
+    private synchronized List<StartEndByte> prepareRemainingBytes(List<StartEndByte> startEndByteList, List<StartEndByte> downloadedStartEndBytes)
     {
-        long startByte = startEndByte.getStart();
-        long endByte = startEndByte.getEnd();
         List<StartEndByte> remainingBytes = Lists.newArrayList();
-        prepareRemaininBytesBySmallestByte(downloadedStartEndBytes, startByte, endByte, remainingBytes);
-        long biggestByteInDownloadedBytes = findBiggestByte(downloadedStartEndBytes);
-        if (endByte > biggestByteInDownloadedBytes)
+        for (StartEndByte startEndByte : startEndByteList)
         {
-            remainingBytes.add(new StartEndByte(biggestByteInDownloadedBytes, endByte));
+            long startByte = startEndByte.getStart();
+            long endByte = startEndByte.getEnd();
+            prepareRemaininBytesBySmallestByte(downloadedStartEndBytes, startByte, endByte, remainingBytes);
+            long biggestByteInDownloadedBytes = findBiggestByte(downloadedStartEndBytes);
+            if (endByte > biggestByteInDownloadedBytes)
+            {
+                remainingBytes.add(new StartEndByte(biggestByteInDownloadedBytes, endByte));
+            }
+        }
+        if (remainingBytes.size() > 0)
+        {
+            FileHelper.remainingStartEndBytes.addAll(remainingBytes);
         }
         return remainingBytes;
     }
