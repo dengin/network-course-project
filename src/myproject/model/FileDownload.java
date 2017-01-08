@@ -34,7 +34,6 @@ public class FileDownload implements Serializable, Runnable
     private MyServer myServer;
     private List<StartEndByte> downloadedStartEndBytes = Lists.newArrayList();
     private Long totalBytesDownloaded = 0L;
-    private Long downloadTime = 0L;
     private int bitRate = 1;
     private int timeout = 2000;
 
@@ -57,8 +56,8 @@ public class FileDownload implements Serializable, Runnable
                 long startTime = new Date().getTime();
                 startDownload(startEndByteList);
                 long elapsedTime = new Date().getTime() - startTime;
-                logger.info("indirmeyle geçen süre: " + elapsedTime);
-                prepareRemainingBytes(startEndByteList, downloadedStartEndBytes);
+//                logger.info(clientName + " - indirmeyle geçen süre: " + elapsedTime);
+                prepareRemainingBytes(startEndByteList, downloadedStartEndBytes, elapsedTime);
                 downloadedStartEndBytes.clear();
                 counter++;
             }
@@ -88,7 +87,7 @@ public class FileDownload implements Serializable, Runnable
                 DatagramSocket dsocket = new DatagramSocket();
                 dsocket.send(sendPacket);
 
-                logger.info(clientName + " - timeout ayarlandı: " + timeout);
+//                logger.info(clientName + " - timeout ayarlandı: " + timeout);
                 dsocket.setSoTimeout(timeout);
 
                 receivePackets(endByte, dsocket);
@@ -146,7 +145,7 @@ public class FileDownload implements Serializable, Runnable
         randomAccessFile.close();
     }
 
-    private synchronized void prepareRemainingBytes(List<StartEndByte> startEndByteList, List<StartEndByte> downloadedStartEndBytes)
+    private synchronized void prepareRemainingBytes(List<StartEndByte> startEndByteList, List<StartEndByte> downloadedStartEndBytes, long elapsedTime)
     {
         List<StartEndByte> remainingBytes = Lists.newArrayList();
         for (StartEndByte startEndByte : startEndByteList)
@@ -154,28 +153,29 @@ public class FileDownload implements Serializable, Runnable
             long startByte = startEndByte.getStart();
             long endByte = startEndByte.getEnd();
             prepareRemaininBytesBySmallestByte(downloadedStartEndBytes, startByte, endByte, remainingBytes);
-            long biggestByteInDownloadedBytes = findBiggestByte(downloadedStartEndBytes);
-            if (endByte > biggestByteInDownloadedBytes)
-            {
-                remainingBytes.add(new StartEndByte(biggestByteInDownloadedBytes, endByte));
-            }
+            prepareRemainingBytesByBiggestByte(downloadedStartEndBytes, endByte, remainingBytes);
         }
         if (remainingBytes.size() > 0)
         {
             FileHelper.remainingStartEndBytes.addAll(remainingBytes);
             if (bitRate > 1)
             {
-                bitRate = bitRate - 1;
-                timeout -= 1000;
-                logger.info("bitrate düşürüldü: " + bitRate);
+                setBitRateAndTimeoutValue(elapsedTime, -1);
+//                logger.info(clientName + " - bitrate düşürüldü: " + bitRate);
             }
         }
         else
         {
-            bitRate = bitRate + 1;
-            timeout += 1000;
-            logger.info("bitrate arttırıldı: " + bitRate);
+            setBitRateAndTimeoutValue(elapsedTime, 1);
+//            logger.info(clientName + " - bitrate arttırıldı: " + bitRate);
         }
+    }
+
+    private void setBitRateAndTimeoutValue(long elapsedTime, int changeValue)
+    {
+        long timeByByte = (((elapsedTime / bitRate) + 999) / 1000) * 1000;
+        bitRate = bitRate + changeValue;
+        timeout = (int) ((timeByByte * bitRate) + 1000);
     }
 
     private void prepareRemaininBytesBySmallestByte(List<StartEndByte> downloadedStartEndBytes, long startByte, long endByte, List<StartEndByte> remainingBytes)
@@ -196,9 +196,16 @@ public class FileDownload implements Serializable, Runnable
         }
     }
 
-    private long findBiggestByte(List<StartEndByte> downloadedStartEndBytes)
+    private void prepareRemainingBytesByBiggestByte(List<StartEndByte> downloadedStartEndBytes, long endByte, List<StartEndByte> remainingBytes)
     {
-        return downloadedStartEndBytes.get(downloadedStartEndBytes.size() - 1).getEnd();
+        if (downloadedStartEndBytes.size() > 0)
+        {
+            long biggestByteInDownloadedBytes = downloadedStartEndBytes.get(downloadedStartEndBytes.size() - 1).getEnd();
+            if (endByte > biggestByteInDownloadedBytes)
+            {
+                remainingBytes.add(new StartEndByte(biggestByteInDownloadedBytes, endByte));
+            }
+        }
     }
 
     private StartEndByte findSmallestByte(List<StartEndByte> downloadedStartEndBytes)
