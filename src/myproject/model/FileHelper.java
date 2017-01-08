@@ -61,12 +61,15 @@ public class FileHelper implements Serializable
         }
         else if (remainingStartEndBytes != null && remainingStartEndBytes.size() > 0)
         {
-            if (remainingStartEndBytes.size() < bitRate)
+            StartEndByte startEndByte = remainingStartEndBytes.get(0);
+            long length = startEndByte.getEnd() - startEndByte.getStart();
+            if (length > MAX_BYTE_LENGTH * bitRate)
             {
-                bitRate = remainingStartEndBytes.size();
+                remainingStartEndBytes.add(new StartEndByte((startEndByte.getStart() + MAX_BYTE_LENGTH), startEndByte.getEnd()));
+                startEndByte.setEnd((startEndByte.getStart() + MAX_BYTE_LENGTH));
             }
-            byteArrayListToDownload.addAll(remainingStartEndBytes.subList(0, bitRate));
-            remainingStartEndBytes = remainingStartEndBytes.subList(bitRate, remainingStartEndBytes.size());
+            remainingStartEndBytes.remove(0);
+            byteArrayListToDownload.add(startEndByte);
         }
         return byteArrayListToDownload;
     }

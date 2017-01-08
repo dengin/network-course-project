@@ -14,8 +14,6 @@ public class MyServer implements Serializable
     private Integer id;
     private String ip;
     private int portNumber;
-    private int bitRate;
-    private int timeout;
 
     public MyServer(int id, String serverIpPort)
     {
@@ -31,8 +29,6 @@ public class MyServer implements Serializable
         {
             checkArgument(false, "Port numara tipinde olmalıdır");
         }
-        this.bitRate = 1;
-        this.timeout = 10000;
     }
 
     public Integer getId()
@@ -63,26 +59,6 @@ public class MyServer implements Serializable
     public void setPortNumber(int portNumber)
     {
         this.portNumber = portNumber;
-    }
-
-    public int getBitRate()
-    {
-        return bitRate;
-    }
-
-    public void setBitRate(int bitRate)
-    {
-        this.bitRate = bitRate;
-    }
-
-    public int getTimeout()
-    {
-        return timeout;
-    }
-
-    public void setTimeout(int timeout)
-    {
-        this.timeout = timeout;
     }
 
     public String getInfo()
