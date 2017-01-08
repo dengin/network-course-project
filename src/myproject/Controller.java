@@ -21,11 +21,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -165,8 +161,7 @@ public class Controller implements Serializable
     {
         DatagramPacket receivePacket = getResponse(RequestType.REQUEST_TYPES.GET_FILE_SIZE, FileHelper.file.getFile_id(), 0, 0, null, selectedServer.getIp(), selectedServer.getPortNumber());
         FileSizeResponseType response = new FileSizeResponseType(receivePacket.getData());
-        FileHelper.fileSize = response.getFileSize();
-        logger.info("Seçilen dosyanın boyutu: " + FileHelper.fileSize);
+        FileHelper.setFileSizeAndFileStartByteSize(response);
     }
 
     private void prepareFileFileByteMap()
@@ -178,6 +173,7 @@ public class Controller implements Serializable
     private void startDownloading()
     {
         ExecutorService executorService = Executors.newFixedThreadPool(this.myClients.size());
+        long startTime = new Date().getTime();
         for (MyClient myClient : this.myClients)
         {
             executorService.execute(myClient);
@@ -186,6 +182,8 @@ public class Controller implements Serializable
         while (!executorService.isTerminated())
         {
         }
+        long elapsedTime = new Date().getTime() - startTime;
+        logger.info("Toplam süre: " + elapsedTime + " ms.");
         logger.info("md5: " + Util.getMd5(new File("out/" + FileHelper.file.getFile_name())));
     }
 

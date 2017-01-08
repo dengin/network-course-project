@@ -17,6 +17,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -32,6 +33,7 @@ public class FileDownload implements Serializable, Runnable
     private String clientName;
     private MyServer myServer;
     private List<StartEndByte> downloadedStartEndBytes = Lists.newArrayList();
+    private Long totalBytesDownloaded = 0L;
 
 
     public FileDownload(String clientName, MyServer myServer)
@@ -49,17 +51,11 @@ public class FileDownload implements Serializable, Runnable
             List<StartEndByte> startEndByteList = FileHelper.getBytesToDownload(myServer.getBitRate());
             if (startEndByteList != null && startEndByteList.size() > 0)
             {
+                long startTime = new Date().getTime();
                 startDownload(startEndByteList);
-
-                List<StartEndByte> remainingBytes = prepareRemainingBytes(startEndByteList, downloadedStartEndBytes);
+                long elapsedTime = new Date().getTime() - startTime;
+                prepareRemainingBytes(startEndByteList, downloadedStartEndBytes);
                 downloadedStartEndBytes.clear();
-                if (remainingBytes.size() > 0)
-                {
-                    for (StartEndByte remainingByte : remainingBytes)
-                    {
-                        logger.info("Gelmeyen byte lar: " + remainingByte.getStart() + " - " + remainingByte.getEnd());
-                    }
-                }
                 counter++;
             }
             else
@@ -68,6 +64,7 @@ public class FileDownload implements Serializable, Runnable
             }
         }
         logger.info(clientName + " - " + counter + " defa çalıştı.");
+        logger.info(clientName + " - " + totalBytesDownloaded + " byte indirildi.");
     }
 
     private synchronized void startDownload(List<StartEndByte> byteArrayListToDownload)
@@ -90,6 +87,7 @@ public class FileDownload implements Serializable, Runnable
                 dsocket.setSoTimeout(myServer.getTimeout());
 
                 receivePackets(endByte, dsocket);
+//                logger.debug("Gelenler: Client - " + clientName + " - " + startByte + "##" + endByte);
             }
         }
         catch (SocketException e)
@@ -115,13 +113,13 @@ public class FileDownload implements Serializable, Runnable
         byte[] receiveData = new byte[ResponseType.MAX_RESPONSE_SIZE];
         long maxReceivedByte = -1;
         RandomAccessFile randomAccessFile = new RandomAccessFile(new File("out/" + FileHelper.file.getFile_name()), "rw");
+        randomAccessFile.setLength(FileHelper.fileSize);
         while (maxReceivedByte < endByte)
         {
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
 
             dsocket.receive(receivePacket);
             FileDataResponseType response = new FileDataResponseType(receivePacket.getData());
-            logger.debug("Gelenler: Client - " + clientName + " - " + response.getStart_byte() + "##" + response.getEnd_byte());
             if (response.getResponseType() != ResponseType.RESPONSE_TYPES.GET_FILE_DATA_SUCCESS)
             {
                 break;
@@ -131,7 +129,7 @@ public class FileDownload implements Serializable, Runnable
                 downloadedStartEndBytes.add(new StartEndByte(response.getStart_byte(), response.getEnd_byte(), response.getData()));
                 int offset = (int) response.getStart_byte();
                 int len = (int) (response.getEnd_byte() - response.getStart_byte()) + 1;
-                randomAccessFile.setLength(FileHelper.fileSize);
+                totalBytesDownloaded += len;
                 randomAccessFile.seek(offset - 1);
                 randomAccessFile.write(response.getData(), 0, len);
             }
@@ -143,7 +141,7 @@ public class FileDownload implements Serializable, Runnable
         randomAccessFile.close();
     }
 
-    private synchronized List<StartEndByte> prepareRemainingBytes(List<StartEndByte> startEndByteList, List<StartEndByte> downloadedStartEndBytes)
+    private synchronized void prepareRemainingBytes(List<StartEndByte> startEndByteList, List<StartEndByte> downloadedStartEndBytes)
     {
         List<StartEndByte> remainingBytes = Lists.newArrayList();
         for (StartEndByte startEndByte : startEndByteList)
@@ -154,14 +152,27 @@ public class FileDownload implements Serializable, Runnable
             long biggestByteInDownloadedBytes = findBiggestByte(downloadedStartEndBytes);
             if (endByte > biggestByteInDownloadedBytes)
             {
-                remainingBytes.add(new StartEndByte(biggestByteInDownloadedBytes, endByte));
+                long index = biggestByteInDownloadedBytes + ((endByte - biggestByteInDownloadedBytes) / 2);
+                remainingBytes.add(new StartEndByte(biggestByteInDownloadedBytes, index));
+                remainingBytes.add(new StartEndByte(index, endByte));
             }
         }
         if (remainingBytes.size() > 0)
         {
             FileHelper.remainingStartEndBytes.addAll(remainingBytes);
+            if (myServer.getBitRate() > 1)
+            {
+                myServer.setBitRate(myServer.getBitRate() / 2);
+                myServer.setTimeout(2000);
+//                logger.info("bitrate düşürüldü: " + myServer.getBitRate());
+            }
         }
-        return remainingBytes;
+        else
+        {
+            myServer.setBitRate(myServer.getBitRate() + 1);
+            myServer.setTimeout(myServer.getTimeout() + 1000);
+//            logger.info("bitrate arttırıldı: " + myServer.getBitRate());
+        }
     }
 
     private void prepareRemaininBytesBySmallestByte(List<StartEndByte> downloadedStartEndBytes, long startByte, long endByte, List<StartEndByte> remainingBytes)
@@ -172,7 +183,9 @@ public class FileDownload implements Serializable, Runnable
             smallestStartByteInDownloadedBytes.setChecked(true);
             if (startByte + 1 < smallestStartByteInDownloadedBytes.getStart())
             {
-                remainingBytes.add(new StartEndByte(startByte, smallestStartByteInDownloadedBytes.getStart()));
+                long index = startByte + ((smallestStartByteInDownloadedBytes.getStart() - startByte) / 2);
+                remainingBytes.add(new StartEndByte(startByte, index));
+                remainingBytes.add(new StartEndByte(index, smallestStartByteInDownloadedBytes.getStart()));
             }
             startByte = smallestStartByteInDownloadedBytes.getEnd();
             if (startByte < endByte)
