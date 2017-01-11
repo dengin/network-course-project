@@ -1,6 +1,6 @@
-package myproject.model;
+package myproject;
 
-import client.loggerManager;
+import log.loggerManager;
 import com.google.common.collect.Lists;
 import model.FileDescriptor;
 import model.FileSizeResponseType;
@@ -77,7 +77,7 @@ public class FileHelper implements Serializable
     public static void setFileSizeAndFileStartByteSize(FileSizeResponseType response)
     {
         fileSize = response.getFileSize();
-        logger.info("Seçilen dosyanın boyutu: " + fileSize);
+        logger.info("Secilen dosyanin boyutu: " + fileSize);
         long startByteSize = fileSize / 100;
         if (startByteSize > 50000L)
         {
@@ -88,6 +88,6 @@ public class FileHelper implements Serializable
             startByteSize = 1000L;
         }
         MAX_BYTE_LENGTH = startByteSize;
-        logger.info("Seçilen dosya için başlangıç byte değeri: " + MAX_BYTE_LENGTH);
+        logger.info("Secilen dosya icin baslangic byte degeri: " + MAX_BYTE_LENGTH);
     }
 }

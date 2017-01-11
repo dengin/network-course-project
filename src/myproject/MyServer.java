@@ -1,4 +1,4 @@
-package myproject.model;
+package myproject;
 
 import java.io.Serializable;
 
@@ -18,7 +18,7 @@ public class MyServer implements Serializable
     public MyServer(int id, String serverIpPort)
     {
         String[] ipPort = serverIpPort.split(":");
-        checkArgument((ipPort != null && ipPort.length == 2), "Server Ip ve port bilgisi ip:port formatında parametre olarak gönderilmelidir");
+        checkArgument((ipPort != null && ipPort.length == 2), "Server Ip ve port bilgisi ip:port formatinda parametre olarak gonderilmelidir");
         this.id = id;
         this.ip = ipPort[0];
         try
@@ -27,7 +27,7 @@ public class MyServer implements Serializable
         }
         catch (Exception e)
         {
-            checkArgument(false, "Port numara tipinde olmalıdır");
+            checkArgument(false, "Port numara tipinde olmalidir");
         }
     }
 

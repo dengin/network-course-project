@@ -1,15 +1,12 @@
 package myproject;
 
-import client.loggerManager;
+import log.loggerManager;
 import com.google.common.collect.Lists;
 import model.FileDescriptor;
 import model.FileListResponseType;
 import model.FileSizeResponseType;
 import model.RequestType;
 import model.ResponseType;
-import myproject.model.FileHelper;
-import myproject.model.MyClient;
-import myproject.model.MyServer;
 import org.apache.log4j.Logger;
 
 import java.io.File;
@@ -48,7 +45,7 @@ public class Controller implements Serializable
 
     private List<MyServer> prepareServerParameters(String[] args)
     {
-        checkArgument((args != null && args.length > 0), "Sunucu ip ve port bilgisi ip:port formatında parametre olarak gönderilmelidir");
+        checkArgument((args != null && args.length > 0), "Sunucu ip ve port bilgisi ip:port formatinda parametre olarak gonderilmelidir");
         List<MyServer> myServers = Lists.newArrayList();
         int startId = 1;
         for (int i = 0; i < args.length; i++)
@@ -82,22 +79,22 @@ public class Controller implements Serializable
 
     private void prepareMainScreen()
     {
-        checkArgument((this.myClients != null && this.myClients.size() > 0), "İstemci bulunamadı");
+        checkArgument((this.myClients != null && this.myClients.size() > 0), "Istemci bulunamadı");
         for (MyClient myClient : this.myClients)
         {
             System.out.println(myClient.getInfo());
         }
-        logger.info("İstemci için id seçiniz: ");
+        logger.info("Istemci icin id seciniz: ");
         while (this.selectedClient == null)
         {
             Scanner in = new Scanner(System.in);
             String selectedClientId = in.nextLine();
             selectedClient = getSelectedClient(selectedClientId);
         }
-        checkArgument((this.selectedClient.getMyServers() != null && this.selectedClient.getMyServers().size() > 0), "Sunucu bulunamadı");
-        logger.info("Seçilen istemci: " + this.selectedClient.getInfo());
+        checkArgument((this.selectedClient.getMyServers() != null && this.selectedClient.getMyServers().size() > 0), "Sunucu bulunamadi");
+        logger.info("Secilen istemci: " + this.selectedClient.getInfo());
         this.selectedServer = this.selectedClient.getMyServers().get(0);
-        logger.info("Seçilen sunucu: " + this.selectedServer.getInfo());
+        logger.info("Secilen sunucu: " + this.selectedServer.getInfo());
     }
 
     private MyClient getSelectedClient(String selectedClientId)
@@ -112,7 +109,7 @@ public class Controller implements Serializable
                 }
             }
         }
-        logger.error("lütfen geçerli bir id giriniz: ");
+        logger.error("Lutfen gecerli bir id giriniz: ");
         return null;
     }
 
@@ -135,7 +132,7 @@ public class Controller implements Serializable
         DatagramPacket receivePacket = getResponse(RequestType.REQUEST_TYPES.GET_FILE_LIST, 0, 0, 0, null, selectedServer.getIp(), selectedServer.getPortNumber());
         FileListResponseType response = new FileListResponseType(receivePacket.getData());
         logger.info(response.toString());
-        logger.info("Dosya numarası seçiniz: ");
+        logger.info("Dosya numarasi seciniz: ");
         while (FileHelper.file == null)
         {
             Scanner in = new Scanner(System.in);
@@ -151,10 +148,10 @@ public class Controller implements Serializable
             }
             if (FileHelper.file == null)
             {
-                logger.error("Lütfen geçerli bir dosya id giriniz: ");
+                logger.error("Lutfen gecerli bir dosya id giriniz: ");
             }
         }
-        logger.info("Seçilen dosya id: " + FileHelper.file.getFile_id());
+        logger.info("Secilen dosya id: " + FileHelper.file.getFile_id());
     }
 
     private void prepareFileSize() throws IOException
@@ -166,7 +163,7 @@ public class Controller implements Serializable
 
     private void prepareFileFileByteMap()
     {
-        File file = new File("out/" + FileHelper.file.getFile_name());
+        File file = new File("./" + FileHelper.file.getFile_name());
         FileHelper.prepareFileBytesMap();
     }
 
@@ -183,8 +180,8 @@ public class Controller implements Serializable
         {
         }
         long elapsedTime = new Date().getTime() - startTime;
-        logger.info("Toplam süre: " + elapsedTime + " ms.");
-        logger.info("md5: " + Util.getMd5(new File("out/" + FileHelper.file.getFile_name())));
+        logger.info("Toplam sure: " + elapsedTime + " ms.");
+        logger.info("md5: " + Util.getMd5(new File("./" + FileHelper.file.getFile_name())));
     }
 
     public static void main(String[] args) throws IOException

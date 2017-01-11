@@ -1,6 +1,6 @@
-package myproject.model;
+package myproject;
 
-import client.loggerManager;
+import log.loggerManager;
 import com.google.common.collect.Lists;
 import model.FileDataResponseType;
 import model.RequestType;
@@ -66,7 +66,7 @@ public class FileDownload implements Serializable, Runnable
                 break;
             }
         }
-        logger.info(clientName + " - " + counter + " defa çalıştı.");
+        logger.info(clientName + " - " + counter + " defa calisti.");
         logger.info(clientName + " - " + totalBytesDownloaded + " byte indirildi.");
     }
 
@@ -104,7 +104,7 @@ public class FileDownload implements Serializable, Runnable
         }
         catch (SocketTimeoutException e)
         {
-            logger.error("Timeout oluştu. Client: " + clientName + ", " + myServer.getInfo() + " timeout: " + timeout);
+            logger.error("Timeout olustu. Client: " + clientName + ", " + myServer.getInfo() + " timeout: " + timeout);
         }
         catch (IOException e)
         {
@@ -116,7 +116,7 @@ public class FileDownload implements Serializable, Runnable
     {
         byte[] receiveData = new byte[ResponseType.MAX_RESPONSE_SIZE];
         long maxReceivedByte = -1;
-        RandomAccessFile randomAccessFile = new RandomAccessFile(new File("out/" + FileHelper.file.getFile_name()), "rw");
+        RandomAccessFile randomAccessFile = new RandomAccessFile(new File("./" + FileHelper.file.getFile_name()), "rw");
         randomAccessFile.setLength(FileHelper.fileSize);
         while (maxReceivedByte < endByte)
         {

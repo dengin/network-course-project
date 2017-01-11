@@ -1,4 +1,4 @@
-package myproject.model;
+package myproject;
 
 import java.io.Serializable;
 import java.net.Inet4Address;
@@ -38,7 +38,7 @@ public class MyClient implements Serializable, Runnable
         }
         if (this.clientName != null)
         {
-            info += " Ağ: " + this.clientName;
+            info += " Ag: " + this.clientName;
         }
         if (this.ipAddress != null)
         {
