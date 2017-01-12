@@ -23,6 +23,7 @@ public class FileHelper implements Serializable
     public static long fileSize;
     public static List<StartEndByte> startEndBytes = Lists.newArrayList();
     public static List<StartEndByte> remainingStartEndBytes = Lists.newArrayList();
+    public static long totalBytesDownloaded;
 
     public FileHelper()
     {
@@ -79,9 +80,9 @@ public class FileHelper implements Serializable
         fileSize = response.getFileSize();
         logger.info("Secilen dosyanin boyutu: " + fileSize);
         long startByteSize = fileSize / 100;
-        if (startByteSize > 50000L)
+        if (startByteSize > 500000L)
         {
-            startByteSize = 50000L;
+            startByteSize = 500000L;
         }
         else if (startByteSize < 1000L)
         {

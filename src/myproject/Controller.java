@@ -1,7 +1,7 @@
 package myproject;
 
-import log.loggerManager;
 import com.google.common.collect.Lists;
+import log.loggerManager;
 import model.FileDescriptor;
 import model.FileListResponseType;
 import model.FileSizeResponseType;
@@ -18,7 +18,13 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.util.*;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -179,8 +185,23 @@ public class Controller implements Serializable
         while (!executorService.isTerminated())
         {
         }
+        prepareResultLog(startTime);
+    }
+
+    private void prepareResultLog(long startTime)
+    {
         long elapsedTime = new Date().getTime() - startTime;
         logger.info("Toplam sure: " + elapsedTime + " ms.");
+        long totalBytesDownloaded = FileHelper.totalBytesDownloaded;
+        if (totalBytesDownloaded > 0)
+        {
+            logger.info("Toplam indirilen byte: " + totalBytesDownloaded + " B.");
+
+            double elapsedTimeAsSecond = ((double) elapsedTime) / 1000;
+            double meanRate = (totalBytesDownloaded * 8) / elapsedTimeAsSecond;
+            DecimalFormat df = new DecimalFormat("#0.0");
+            logger.info("Ortalama indirme hizi: " + df.format(meanRate) + " bps.");
+        }
         logger.info("md5: " + Util.getMd5(new File("./" + FileHelper.file.getFile_name())));
     }
 

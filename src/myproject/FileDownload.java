@@ -17,6 +17,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -47,6 +48,8 @@ public class FileDownload implements Serializable, Runnable
     @Override
     public void run()
     {
+        String interfaceInfo = myServer.getInfo() + " - " + clientName;
+        long startTimeForInterface = new Date().getTime();
         int counter = 0;
         while (true)
         {
@@ -56,7 +59,7 @@ public class FileDownload implements Serializable, Runnable
                 long startTime = new Date().getTime();
                 startDownload(startEndByteList);
                 long elapsedTime = new Date().getTime() - startTime;
-//                logger.info(clientName + " - indirmeyle geçen süre: " + elapsedTime);
+//                logger.info(interfaceInfo + " - indirmeyle geçen süre: " + elapsedTime);
                 prepareRemainingBytes(startEndByteList, downloadedStartEndBytes, elapsedTime);
                 downloadedStartEndBytes.clear();
                 counter++;
@@ -66,8 +69,20 @@ public class FileDownload implements Serializable, Runnable
                 break;
             }
         }
-        logger.info(clientName + " - " + counter + " defa calisti.");
-        logger.info(clientName + " - " + totalBytesDownloaded + " byte indirildi.");
+        logger.info(interfaceInfo + " - " + counter + " defa calisti.");
+        if (totalBytesDownloaded > 0)
+        {
+            long elapsedTime = new Date().getTime() - startTimeForInterface;
+            logger.info(interfaceInfo + " - " + totalBytesDownloaded + " byte indirildi.");
+            logger.info(interfaceInfo + " - Toplam sure: " + elapsedTime + " ms.");
+
+            double elapsedTimeAsSecond = ((double) elapsedTime) / 1000;
+            double meanRate = (totalBytesDownloaded * 8) / elapsedTimeAsSecond;
+            DecimalFormat df = new DecimalFormat("#0.0");
+            logger.info(interfaceInfo + " - Ortalama indirme hizi: " + df.format(meanRate) + " bps.");
+        }
+
+        FileHelper.totalBytesDownloaded += totalBytesDownloaded;
     }
 
     private synchronized void startDownload(List<StartEndByte> byteArrayListToDownload)
@@ -91,6 +106,7 @@ public class FileDownload implements Serializable, Runnable
                 dsocket.setSoTimeout(timeout);
 
                 receivePackets(endByte, dsocket);
+                logger.debug(myServer.getInfo() + " - " + clientName + " - anlık hiz: " + (endByte - startByte) + " B.");
 //                logger.debug("Gelenler: Client - " + clientName + " - " + startByte + "##" + endByte);
             }
         }
@@ -104,7 +120,7 @@ public class FileDownload implements Serializable, Runnable
         }
         catch (SocketTimeoutException e)
         {
-            logger.error("Timeout olustu. Client: " + clientName + ", " + myServer.getInfo() + " timeout: " + timeout);
+            logger.error("Timeout olustu. Client: " + clientName + ", " + myServer.getInfo() + " timeout: " + timeout + " ms.");
         }
         catch (IOException e)
         {
